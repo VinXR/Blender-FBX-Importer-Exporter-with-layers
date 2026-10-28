@@ -25,6 +25,9 @@ import numpy as np
 # -----
 # Utils
 from . import parse_fbx, fbx_utils
+# FBX-LAYERS begin
+from . import layers
+# FBX-LAYERS end
 
 from .parse_fbx import (
     data_types,
@@ -3556,6 +3559,12 @@ def load(operator, context, filepath="",
         # root_helper.print_info(0)
     _()
     del _
+
+    # FBX-LAYERS begin
+    perfmon.step("FBX import: Display Layers...")
+
+    layers.import_display_layers(fbx_table_nodes, fbx_connections, fbx_helper_nodes, view_layer)
+    # FBX-LAYERS end
 
     perfmon.step("FBX import: ShapeKeys...")
 

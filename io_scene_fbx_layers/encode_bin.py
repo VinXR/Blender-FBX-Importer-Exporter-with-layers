@@ -31,7 +31,10 @@ _FILE_ID = b'\x28\xb3\x2a\xeb\xb6\x24\xcc\xc2\xbf\xc8\xb0\x2a\xa9\x2b\xfc\xf1'
 _FOOT_ID = b'\xfa\xbc\xab\x09\xd0\xc8\xd4\x66\xb1\x76\xfb\x83\x1c\xf7\x26\x7e'
 
 # Awful exceptions: those "classes" of elements seem to need block sentinel even when having no children and some props.
-_ELEMS_ID_ALWAYS_BLOCK_SENTINEL = {b"AnimationStack", b"AnimationLayer"}
+# FBX-LAYERS begin
+# Display Layers too: without the sentinel the FBX SDK (so Max/Maya) silently drops them.
+_ELEMS_ID_ALWAYS_BLOCK_SENTINEL = {b"AnimationStack", b"AnimationLayer", b"CollectionExclusive"}
+# FBX-LAYERS end
 
 
 class FBXElem:

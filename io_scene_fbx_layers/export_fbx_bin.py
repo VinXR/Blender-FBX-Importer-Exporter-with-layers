@@ -28,6 +28,9 @@ from bpy.app.translations import pgettext_tip as tip_
 from mathutils import Vector, Matrix
 
 from . import encode_bin, data_types, fbx_utils
+# FBX-LAYERS begin
+from . import layers
+# FBX-LAYERS end
 from .fbx_utils import (
     # Constants.
     FBX_VERSION, FBX_HEADER_VERSION, FBX_SCENEINFO_VERSION, FBX_TEMPLATES_VERSION,
@@ -1675,6 +1678,17 @@ def _gen_vid_path(img, scene_data):
     fname_rel = bpy_extras.io_utils.path_reference(img_filepath, msetts.base_src, msetts.base_dst, msetts.path_mode,
                                                    msetts.subdir, msetts.copy_set, img.library)
     fname_abs = os.path.normpath(os.path.abspath(os.path.join(msetts.base_dst, fname_rel)))
+    # FBX-LAYERS begin
+    # Packed images may have no file on disk to copy (e.g. textures imported from an FBX with embedded media):
+    # write their packed data at the destination instead of leaving it to path_reference_copy().
+    if msetts.path_mode == 'COPY' and not msetts.embed_textures and img.packed_file is not None:
+        src_abs = os.path.normpath(bpy.path.abspath(img_filepath, start=msetts.base_src, library=img.library))
+        for pair in [pair for pair in msetts.copy_set if pair[0] == src_abs]:
+            msetts.copy_set.discard(pair)
+        os.makedirs(os.path.dirname(fname_abs), exist_ok=True)
+        with open(fname_abs, 'wb') as f:
+            f.write(img.packed_file.data)
+    # FBX-LAYERS end
     return fname_abs, fname_rel
 
 
@@ -2667,6 +2681,15 @@ def fbx_data_from_scene(scene, depsgraph, settings):
     perfmon.step("FBX export prepare: Wrapping Meshes...")
 
     data_meshes = {}
+    # FBX-LAYERS begin
+    # Material slot layout of the objects that use each original mesh as is, see do_copy below.
+    mesh_slot_layouts = {}
+
+    def material_slot_layout(materials):
+        # FBX material index of each slot: a repeated material reuses the index of its first slot, empty slots are None.
+        indices = {}
+        return tuple(None if ma is None else indices.setdefault(ma, len(indices)) for ma in materials)
+    # FBX-LAYERS end
     for ob_obj in objects:
         if ob_obj.type not in BLENDER_OBJECT_TYPES_MESHLIKE:
             continue
@@ -2692,7 +2715,13 @@ def fbx_data_from_scene(scene, depsgraph, settings):
         #  - Whenever use_mesh_modifiers is enabled and either there are modifiers to apply or the Object needs to be
         #    converted to a mesh.
         # If multiple cases apply to an Object, then only the last applicable case is relevant.
-        do_copy = any(ms.link == 'OBJECT' for ms in ob.material_slots) or settings.use_triangles
+        # FBX-LAYERS begin
+        # FBX materials belong to the node (Model), not to the Geometry, so objects sharing a mesh can keep sharing it
+        # with different (Object-linked) materials, as long as each slot maps to the same FBX material index.
+        # Only copy the mesh when its slot layout differs from the objects already using the original mesh.
+        slot_layout = material_slot_layout(ms.material for ms in ob.material_slots)
+        do_copy = settings.use_triangles or mesh_slot_layouts.get(ob.data, slot_layout) != slot_layout
+        # FBX-LAYERS end
         do_convert = ob.type in BLENDER_OTHER_OBJECT_TYPES
         do_evaluate = do_convert and settings.use_mesh_modifiers
 
@@ -2773,6 +2802,9 @@ def fbx_data_from_scene(scene, depsgraph, settings):
         if tmp_me is None:
             # Use the original data of this Object.
             data_meshes[ob_obj] = (get_blenderID_key(ob.data), ob.data, False)
+            # FBX-LAYERS begin
+            mesh_slot_layouts.setdefault(ob.data, slot_layout)
+            # FBX-LAYERS end
         else:
             # Triangulate the mesh if requested
             if settings.use_triangles:
@@ -2959,6 +2991,9 @@ def fbx_data_from_scene(scene, depsgraph, settings):
             data_empties, data_lights, data_cameras, data_meshes, None,
             data_bones, data_leaf_bones, data_deformers_skin, data_deformers_shape,
             data_world, data_materials, data_textures, data_videos,
+            # FBX-LAYERS begin
+            None,
+            # FBX-LAYERS end
         )
         animations, animated, frame_start, frame_end = fbx_animations(tmp_scdata)
 
@@ -3039,6 +3074,12 @@ def fbx_data_from_scene(scene, depsgraph, settings):
         templates[b"AnimationCurveNode"] = fbx_template_def_animcurvenode(scene, settings, nbr_users=nbr_acnodes)
         templates[b"AnimationCurve"] = fbx_template_def_animcurve(scene, settings, nbr_users=nbr_acurves)
 
+    # FBX-LAYERS begin
+    data_display_layers = layers.export_gather(scene, objects)
+    if data_display_layers:
+        templates[b"DisplayLayer"] = layers.fbx_template_def_display_layer(nbr_users=len(data_display_layers))
+    # FBX-LAYERS end
+
     templates_users = sum(tmpl.nbr_users for tmpl in templates.values())
 
     # ##### Creation of connections...
@@ -3084,6 +3125,10 @@ def fbx_data_from_scene(scene, depsgraph, settings):
                 mesh_key, _me, _free = data_meshes[ob_obj]
                 connections.append((b"OO", get_fbx_uuid_from_key(mesh_key), ob_obj.fbx_uuid, None))
 
+    # FBX-LAYERS begin
+    connections.extend(layers.export_connections(data_display_layers))
+    # FBX-LAYERS end
+
     # Leaf Bones
     for (_node_name, par_uuid, node_uuid, attr_uuid, _matrix, _hide, _size) in data_leaf_bones:
         connections.append((b"OO", node_uuid, par_uuid, None))
@@ -3114,11 +3159,20 @@ def fbx_data_from_scene(scene, depsgraph, settings):
 
     # Materials
     mesh_material_indices = {}
+    # FBX-LAYERS begin
+    # The first object using a mesh is the one its Geometry gets written from (same order as data_meshes), so only it
+    # defines the mesh's material indices. Other objects sharing the mesh have the same slot layout, maybe with
+    # different materials (see do_copy in data_meshes).
+    mesh_material_owners = {}
+    # FBX-LAYERS end
     for ob_obj in objects:
         ob_mat_idx = 0
         me = None
         if ob_obj.type in BLENDER_OBJECT_TYPES_MESHLIKE:
             _mesh_key, me, _free = data_meshes[ob_obj]
+            # FBX-LAYERS begin
+            mesh_material_owners.setdefault(me, ob_obj)
+            # FBX-LAYERS end
         # NOTE: If a mesh has multiple material slots with the same material, they are combined into one
         # single connection (slot).
         # Even if duplicate materials were exported without combining them into one slot, keeping duplicate
@@ -3138,6 +3192,11 @@ def fbx_data_from_scene(scene, depsgraph, settings):
             # Should not be an issue in practice, and it's needed in case we export duplis but not the original!
             if ob_obj.type not in BLENDER_OBJECT_TYPES_MESHLIKE:
                 continue
+            # FBX-LAYERS begin
+            if mesh_material_owners[me] != ob_obj:
+                ob_mat_idx += 1
+                continue
+            # FBX-LAYERS end
             if ma not in mesh_material_indices.setdefault(me, {}):
                 mesh_material_indices[me][ma] = ob_mat_idx
             else:
@@ -3191,6 +3250,9 @@ def fbx_data_from_scene(scene, depsgraph, settings):
         data_empties, data_lights, data_cameras, data_meshes, mesh_material_indices,
         data_bones, data_leaf_bones, data_deformers_skin, data_deformers_shape,
         data_world, data_materials, data_textures, data_videos,
+        # FBX-LAYERS begin
+        data_display_layers,
+        # FBX-LAYERS end
     )
 
 
@@ -3217,9 +3279,10 @@ def fbx_header_elements(root, scene_data, time=None):
     app_name = "Blender (stable FBX IO)"
     app_ver = bpy.app.version_string
 
-    from . import bl_info
-    addon_ver = bl_info["version"]
-    del bl_info
+    # FBX-LAYERS begin
+    # No bl_info in an extension: keep the version of the official addon this fork is based on.
+    addon_ver = (5, 15, 0)
+    # FBX-LAYERS end
 
     # ##### Start of FBXHeaderExtension element.
     header_ext = elem_empty(root, b"FBXHeaderExtension")
@@ -3447,6 +3510,10 @@ def fbx_objects_elements(root, scene_data):
     for vid in scene_data.data_videos:
         fbx_data_video_elements(objects, vid, scene_data)
 
+    # FBX-LAYERS begin
+    layers.fbx_data_display_layer_elements(objects, scene_data)
+    # FBX-LAYERS end
+
     perfmon.step("FBX export fetch animations...")
     start_time = time.process_time()
 
@@ -3577,7 +3644,10 @@ def save_single(operator, scene, depsgraph, filepath="",
         os.path.dirname(bpy.data.filepath),  # base_src
         os.path.dirname(filepath),  # base_dst
         # Local dir where to put images (media), using FBX conventions.
-        os.path.splitext(os.path.basename(filepath))[0] + ".fbm",  # subdir
+        # FBX-LAYERS begin
+        # Copied (not embedded) textures go in the same folder as the FBX.
+        os.path.splitext(os.path.basename(filepath))[0] + ".fbm" if embed_textures else "",  # subdir
+        # FBX-LAYERS end
         embed_textures,
         set(),  # copy_set
         set(),  # embedded_set

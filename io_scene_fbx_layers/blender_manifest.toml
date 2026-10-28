@@ -1,0 +1,21 @@
+schema_version = "1.0.0"
+
+id = "io_scene_fbx_layers"
+version = "1.0.3"
+name = "FBX + Layers"
+tagline = "FBX import/export that maps FBX Display Layers to collections"
+maintainer = "VinXR"
+type = "add-on"
+website = "https://github.com/VinXR/Blender-FBX-Importer-Exporter-with-layers"
+
+tags = ["Import-Export"]
+
+blender_version_min = "5.1.0"
+
+license = [
+  "SPDX:GPL-2.0-or-later",
+]
+copyright = [
+  "2011-2023 Blender Foundation",
+  "2026 VinXR",
+]

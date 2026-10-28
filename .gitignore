@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+# Build output (attached to GitHub releases instead).
+dist/
+
+# Local-only: third-party sample assets and internal notes.
+example/
+tests/samples/
+Docs/

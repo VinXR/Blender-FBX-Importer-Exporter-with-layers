@@ -2,20 +2,10 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-bl_info = {
-    "name": "FBX format",
-    # This is now displayed as the maintainer, so show the foundation.
-    # "author": "Campbell Barton, Bastien Montagne, Jens Restemeier, @Mysteryem", # Original Authors
-    "author": "Blender Foundation",
-    "version": (5, 15, 0),
-    "blender": (5, 0, 0),
-    "location": "File > Import-Export",
-    "description": "FBX IO meshes, UVs, vertex colors, materials, textures, cameras, lamps and actions",
-    "warning": "",
-    "doc_url": "{BLENDER_MANUAL_URL}/addons/import_export/scene_fbx.html",
-    "support": 'OFFICIAL',
-    "category": "Import-Export",
-}
+# FBX-LAYERS begin
+# Fork of the official io_scene_fbx 5.15.0 (Blender 5.1) adding FBX Display Layers <-> Collections, see layers.py.
+# Packaged as an extension: metadata lives in blender_manifest.toml, so the original bl_info is removed.
+# FBX-LAYERS end
 
 
 if "bpy" in locals():
@@ -49,8 +39,10 @@ from bpy_extras.io_utils import (
 @orientation_helper(axis_forward='-Z', axis_up='Y')
 class ImportFBX(bpy.types.Operator, ImportHelper):
     """Load a FBX file"""
-    bl_idname = "import_scene.fbx"
-    bl_label = "Import FBX"
+    # FBX-LAYERS begin
+    bl_idname = "import_scene.fbx_layers"
+    bl_label = "Import FBX + Layers"
+    # FBX-LAYERS end
     bl_options = {'UNDO', 'PRESET'}
 
     directory: StringProperty(
@@ -311,8 +303,10 @@ def import_panel_armature(layout, operator):
 @orientation_helper(axis_forward='-Z', axis_up='Y')
 class ExportFBX(bpy.types.Operator, ExportHelper):
     """Write a FBX file"""
-    bl_idname = "export_scene.fbx"
-    bl_label = "Export FBX"
+    # FBX-LAYERS begin
+    bl_idname = "export_scene.fbx_layers"
+    bl_label = "Export FBX + Layers"
+    # FBX-LAYERS end
     bl_options = {'UNDO', 'PRESET'}
 
     filename_ext = ".fbx"
@@ -551,7 +545,10 @@ class ExportFBX(bpy.types.Operator, ExportHelper):
         soft_min=0.0, soft_max=10.0,
         default=1.0,  # default: min slope: 0.005, max frame step: 10.
     )
-    path_mode: path_reference_mode
+    # FBX-LAYERS begin
+    # Default to copying the textures next to the FBX, referenced with relative paths.
+    path_mode: EnumProperty(**{**path_reference_mode.keywords, "default": 'COPY'})
+    # FBX-LAYERS end
     embed_textures: BoolProperty(
         name="Embed Textures",
         description="Embed textures in FBX binary file (only for \"Copy\" path mode!)",
@@ -712,12 +709,14 @@ def export_panel_animation(layout, operator):
         body.prop(operator, "bake_anim_simplify_factor")
 
 
+# FBX-LAYERS begin
 def menu_func_import(self, context):
-    self.layout.operator(ImportFBX.bl_idname, text="FBX (.fbx) (Legacy)")
+    self.layout.operator(ImportFBX.bl_idname, text="FBX + Layers (.fbx)")
 
 
 def menu_func_export(self, context):
-    self.layout.operator(ExportFBX.bl_idname, text="FBX (.fbx)")
+    self.layout.operator(ExportFBX.bl_idname, text="FBX + Layers (.fbx)")
+# FBX-LAYERS end
 
 
 classes = (

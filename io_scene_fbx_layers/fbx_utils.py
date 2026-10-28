@@ -1926,6 +1926,9 @@ FBXExportData = namedtuple("FBXExportData", (
     "data_empties", "data_lights", "data_cameras", "data_meshes", "mesh_material_indices",
     "data_bones", "data_leaf_bones", "data_deformers_skin", "data_deformers_shape",
     "data_world", "data_materials", "data_textures", "data_videos",
+    # FBX-LAYERS begin
+    "data_display_layers",
+    # FBX-LAYERS end
 ))
 
 # Helper container gathering all importer settings.
