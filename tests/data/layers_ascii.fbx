@@ -1,0 +1,716 @@
+; FBX 7.7.0 project file
+; ----------------------------------------------------
+
+FBXHeaderExtension:  {
+	FBXHeaderVersion: 1004
+	FBXVersion: 7700
+	CreationTimeStamp:  {
+		Version: 1000
+		Year: 2026
+		Month: 10
+		Day: 28
+		Hour: 20
+		Minute: 45
+		Second: 40
+		Millisecond: 868
+	}
+	Creator: "FBX SDK/FBX Plugins version 2020.3.11"
+	OtherFlags:  {
+		TCDefinition: 127
+	}
+	SceneInfo: "SceneInfo::GlobalInfo", "UserData" {
+		Type: "UserData"
+		Version: 100
+		MetaData:  {
+			Version: 100
+			Title: ""
+			Subject: ""
+			Author: ""
+			Keywords: ""
+			Revision: ""
+			Comment: ""
+		}
+		Properties70:  {
+			P: "DocumentUrl", "KString", "Url", "", "D:\HevolusDev\Blender\FbxLayers\tests\data\layers_ascii.fbx"
+			P: "SrcDocumentUrl", "KString", "Url", "", "D:\HevolusDev\Blender\FbxLayers\tests\data\layers_ascii.fbx"
+			P: "Original", "Compound", "", ""
+			P: "Original|ApplicationVendor", "KString", "", "", "Blender Foundation"
+			P: "Original|ApplicationName", "KString", "", "", "Blender (stable FBX IO)"
+			P: "Original|ApplicationVersion", "KString", "", "", "5.2.0 LTS"
+			P: "Original|DateTime_GMT", "DateTime", "", "", "01/01/1970 00:00:00.000"
+			P: "Original|FileName", "KString", "", "", "/foobar.fbx"
+			P: "LastSaved", "Compound", "", ""
+			P: "LastSaved|ApplicationVendor", "KString", "", "", "Blender Foundation"
+			P: "LastSaved|ApplicationName", "KString", "", "", "Blender (stable FBX IO)"
+			P: "LastSaved|ApplicationVersion", "KString", "", "", "5.2.0 LTS"
+			P: "LastSaved|DateTime_GMT", "DateTime", "", "", "01/01/1970 00:00:00.000"
+			P: "Original|ApplicationNativeFile", "KString", "", "", ""
+		}
+	}
+}
+GlobalSettings:  {
+	Version: 1000
+	Properties70:  {
+		P: "UpAxis", "int", "Integer", "",1
+		P: "UpAxisSign", "int", "Integer", "",1
+		P: "FrontAxis", "int", "Integer", "",2
+		P: "FrontAxisSign", "int", "Integer", "",1
+		P: "CoordAxis", "int", "Integer", "",0
+		P: "CoordAxisSign", "int", "Integer", "",1
+		P: "OriginalUpAxis", "int", "Integer", "",-1
+		P: "OriginalUpAxisSign", "int", "Integer", "",1
+		P: "UnitScaleFactor", "double", "Number", "",1
+		P: "OriginalUnitScaleFactor", "double", "Number", "",1
+		P: "AmbientColor", "ColorRGB", "Color", "",0,0,0
+		P: "DefaultCamera", "KString", "", "", "Producer Perspective"
+		P: "TimeMode", "enum", "", "",11
+		P: "TimeProtocol", "enum", "", "",2
+		P: "SnapOnFrameMode", "enum", "", "",0
+		P: "TimeSpanStart", "KTime", "Time", "",0
+		P: "TimeSpanStop", "KTime", "Time", "",46186158000
+		P: "CustomFrameRate", "double", "Number", "",24
+		P: "TimeMarker", "Compound", "", ""
+		P: "CurrentTimeMarker", "int", "Integer", "",-1
+	}
+}
+
+; Documents Description
+;------------------------------------------------------------------
+
+Documents:  {
+	Count: 1
+	Document: 2469026627760, "Scene", "Scene" {
+		Properties70:  {
+			P: "SourceObject", "object", "", ""
+			P: "ActiveAnimStackName", "KString", "", "", ""
+		}
+		RootNode: 0
+	}
+}
+
+; Document References
+;------------------------------------------------------------------
+
+References:  {
+}
+
+; Object definitions
+;------------------------------------------------------------------
+
+Definitions:  {
+	Version: 100
+	Count: 29
+	ObjectType: "GlobalSettings" {
+		Count: 1
+	}
+	ObjectType: "NodeAttribute" {
+		Count: 5
+		PropertyTemplate: "FbxNull" {
+			Properties70:  {
+				P: "Color", "ColorRGB", "Color", "",0.8,0.8,0.8
+				P: "Size", "double", "Number", "",100
+				P: "Look", "enum", "", "",1
+			}
+		}
+	}
+	ObjectType: "Model" {
+		Count: 12
+		PropertyTemplate: "FbxNode" {
+			Properties70:  {
+				P: "QuaternionInterpolate", "enum", "", "",0
+				P: "RotationOffset", "Vector3D", "Vector", "",0,0,0
+				P: "RotationPivot", "Vector3D", "Vector", "",0,0,0
+				P: "ScalingOffset", "Vector3D", "Vector", "",0,0,0
+				P: "ScalingPivot", "Vector3D", "Vector", "",0,0,0
+				P: "TranslationActive", "bool", "", "",0
+				P: "TranslationMin", "Vector3D", "Vector", "",0,0,0
+				P: "TranslationMax", "Vector3D", "Vector", "",0,0,0
+				P: "TranslationMinX", "bool", "", "",0
+				P: "TranslationMinY", "bool", "", "",0
+				P: "TranslationMinZ", "bool", "", "",0
+				P: "TranslationMaxX", "bool", "", "",0
+				P: "TranslationMaxY", "bool", "", "",0
+				P: "TranslationMaxZ", "bool", "", "",0
+				P: "RotationOrder", "enum", "", "",0
+				P: "RotationSpaceForLimitOnly", "bool", "", "",0
+				P: "RotationStiffnessX", "double", "Number", "",0
+				P: "RotationStiffnessY", "double", "Number", "",0
+				P: "RotationStiffnessZ", "double", "Number", "",0
+				P: "AxisLen", "double", "Number", "",10
+				P: "PreRotation", "Vector3D", "Vector", "",0,0,0
+				P: "PostRotation", "Vector3D", "Vector", "",0,0,0
+				P: "RotationActive", "bool", "", "",0
+				P: "RotationMin", "Vector3D", "Vector", "",0,0,0
+				P: "RotationMax", "Vector3D", "Vector", "",0,0,0
+				P: "RotationMinX", "bool", "", "",0
+				P: "RotationMinY", "bool", "", "",0
+				P: "RotationMinZ", "bool", "", "",0
+				P: "RotationMaxX", "bool", "", "",0
+				P: "RotationMaxY", "bool", "", "",0
+				P: "RotationMaxZ", "bool", "", "",0
+				P: "InheritType", "enum", "", "",0
+				P: "ScalingActive", "bool", "", "",0
+				P: "ScalingMin", "Vector3D", "Vector", "",0,0,0
+				P: "ScalingMax", "Vector3D", "Vector", "",1,1,1
+				P: "ScalingMinX", "bool", "", "",0
+				P: "ScalingMinY", "bool", "", "",0
+				P: "ScalingMinZ", "bool", "", "",0
+				P: "ScalingMaxX", "bool", "", "",0
+				P: "ScalingMaxY", "bool", "", "",0
+				P: "ScalingMaxZ", "bool", "", "",0
+				P: "GeometricTranslation", "Vector3D", "Vector", "",0,0,0
+				P: "GeometricRotation", "Vector3D", "Vector", "",0,0,0
+				P: "GeometricScaling", "Vector3D", "Vector", "",1,1,1
+				P: "MinDampRangeX", "double", "Number", "",0
+				P: "MinDampRangeY", "double", "Number", "",0
+				P: "MinDampRangeZ", "double", "Number", "",0
+				P: "MaxDampRangeX", "double", "Number", "",0
+				P: "MaxDampRangeY", "double", "Number", "",0
+				P: "MaxDampRangeZ", "double", "Number", "",0
+				P: "MinDampStrengthX", "double", "Number", "",0
+				P: "MinDampStrengthY", "double", "Number", "",0
+				P: "MinDampStrengthZ", "double", "Number", "",0
+				P: "MaxDampStrengthX", "double", "Number", "",0
+				P: "MaxDampStrengthY", "double", "Number", "",0
+				P: "MaxDampStrengthZ", "double", "Number", "",0
+				P: "PreferedAngleX", "double", "Number", "",0
+				P: "PreferedAngleY", "double", "Number", "",0
+				P: "PreferedAngleZ", "double", "Number", "",0
+				P: "LookAtProperty", "object", "", ""
+				P: "UpVectorProperty", "object", "", ""
+				P: "Show", "bool", "", "",1
+				P: "NegativePercentShapeSupport", "bool", "", "",1
+				P: "DefaultAttributeIndex", "int", "Integer", "",-1
+				P: "Freeze", "bool", "", "",0
+				P: "LODBox", "bool", "", "",0
+				P: "Lcl Translation", "Lcl Translation", "", "A",0,0,0
+				P: "Lcl Rotation", "Lcl Rotation", "", "A",0,0,0
+				P: "Lcl Scaling", "Lcl Scaling", "", "A",1,1,1
+				P: "Visibility", "Visibility", "", "A",1
+				P: "Visibility Inheritance", "Visibility Inheritance", "", "",1
+			}
+		}
+	}
+	ObjectType: "Geometry" {
+		Count: 7
+		PropertyTemplate: "FbxMesh" {
+			Properties70:  {
+				P: "Color", "ColorRGB", "Color", "",0.8,0.8,0.8
+				P: "BBoxMin", "Vector3D", "Vector", "",0,0,0
+				P: "BBoxMax", "Vector3D", "Vector", "",0,0,0
+				P: "Primary Visibility", "bool", "", "",1
+				P: "Casts Shadows", "bool", "", "",1
+				P: "Receive Shadows", "bool", "", "",1
+			}
+		}
+	}
+	ObjectType: "CollectionExclusive" {
+		Count: 4
+		PropertyTemplate: "FbxDisplayLayer" {
+			Properties70:  {
+				P: "Color", "ColorRGB", "Color", "",0.8,0.8,0.8
+				P: "Show", "bool", "", "",1
+				P: "Freeze", "bool", "", "",0
+				P: "LODBox", "bool", "", "",0
+			}
+		}
+	}
+}
+
+; Object properties
+;------------------------------------------------------------------
+
+Objects:  {
+	NodeAttribute: 2469026588928, "NodeAttribute::Inst", "Null" {
+		TypeFlags: "Null"
+	}
+	NodeAttribute: 2469026618080, "NodeAttribute::Parent", "Null" {
+		TypeFlags: "Null"
+	}
+	NodeAttribute: 2469026618256, "NodeAttribute::Rig", "Null" {
+		TypeFlags: "Null"
+	}
+	NodeAttribute: 2469055383056, "NodeAttribute::Bone", "LimbNode" {
+		Properties70:  {
+			P: "Size", "double", "Number", "",3.30000004917383
+		}
+		TypeFlags: "Skeleton"
+	}
+	NodeAttribute: 2469055383248, "NodeAttribute::Bone_end", "LimbNode" {
+		Properties70:  {
+			P: "Size", "double", "Number", "",330.000004917383
+		}
+		TypeFlags: "Skeleton"
+	}
+	Geometry: 2469055383776, "Geometry::Child", "Mesh" {
+		Vertices: *9 {
+			a: 0,0,0,1,0,0,0,1,0
+		} 
+		PolygonVertexIndex: *3 {
+			a: 0,1,-3
+		} 
+		Edges: *3 {
+			a: 0,1,2
+		} 
+		GeometryVersion: 124
+		LayerElementNormal: 0 {
+			Version: 102
+			Name: ""
+			MappingInformationType: "ByPolygonVertex"
+			ReferenceInformationType: "IndexToDirect"
+			Normals: *3 {
+				a: 0,0,1
+			} 
+			NormalsW: *1 {
+				a: 1
+			} 
+			NormalsIndex: *3 {
+				a: 0,0,0
+			} 
+		}
+		Layer: 0 {
+			Version: 100
+			LayerElement:  {
+				Type: "LayerElementNormal"
+				TypedIndex: 0
+			}
+		}
+	}
+	Geometry: 2469055500544, "Geometry::SrcCube", "Mesh" {
+		Vertices: *9 {
+			a: 0,0,0,1,0,0,0,1,0
+		} 
+		PolygonVertexIndex: *3 {
+			a: 0,1,-3
+		} 
+		Edges: *3 {
+			a: 0,1,2
+		} 
+		GeometryVersion: 124
+		LayerElementNormal: 0 {
+			Version: 102
+			Name: ""
+			MappingInformationType: "ByPolygonVertex"
+			ReferenceInformationType: "IndexToDirect"
+			Normals: *3 {
+				a: 0,0,1
+			} 
+			NormalsW: *1 {
+				a: 1
+			} 
+			NormalsIndex: *3 {
+				a: 0,0,0
+			} 
+		}
+		Layer: 0 {
+			Version: 100
+			LayerElement:  {
+				Type: "LayerElementNormal"
+				TypedIndex: 0
+			}
+		}
+	}
+	Geometry: 2469055501392, "Geometry::OnlyA", "Mesh" {
+		Vertices: *9 {
+			a: 0,0,0,1,0,0,0,1,0
+		} 
+		PolygonVertexIndex: *3 {
+			a: 0,1,-3
+		} 
+		Edges: *3 {
+			a: 0,1,2
+		} 
+		GeometryVersion: 124
+		LayerElementNormal: 0 {
+			Version: 102
+			Name: ""
+			MappingInformationType: "ByPolygonVertex"
+			ReferenceInformationType: "IndexToDirect"
+			Normals: *3 {
+				a: 0,0,1
+			} 
+			NormalsW: *1 {
+				a: 1
+			} 
+			NormalsIndex: *3 {
+				a: 0,0,0
+			} 
+		}
+		Layer: 0 {
+			Version: 100
+			LayerElement:  {
+				Type: "LayerElementNormal"
+				TypedIndex: 0
+			}
+		}
+	}
+	Geometry: 2469055502240, "Geometry::RootOnly", "Mesh" {
+		Vertices: *9 {
+			a: 0,0,0,1,0,0,0,1,0
+		} 
+		PolygonVertexIndex: *3 {
+			a: 0,1,-3
+		} 
+		Edges: *3 {
+			a: 0,1,2
+		} 
+		GeometryVersion: 124
+		LayerElementNormal: 0 {
+			Version: 102
+			Name: ""
+			MappingInformationType: "ByPolygonVertex"
+			ReferenceInformationType: "IndexToDirect"
+			Normals: *3 {
+				a: 0,0,1
+			} 
+			NormalsW: *1 {
+				a: 1
+			} 
+			NormalsIndex: *3 {
+				a: 0,0,0
+			} 
+		}
+		Layer: 0 {
+			Version: 100
+			LayerElement:  {
+				Type: "LayerElementNormal"
+				TypedIndex: 0
+			}
+		}
+	}
+	Geometry: 2469055503088, "Geometry::Shared", "Mesh" {
+		Vertices: *9 {
+			a: 0,0,0,1,0,0,0,1,0
+		} 
+		PolygonVertexIndex: *3 {
+			a: 0,1,-3
+		} 
+		Edges: *3 {
+			a: 0,1,2
+		} 
+		GeometryVersion: 124
+		LayerElementNormal: 0 {
+			Version: 102
+			Name: ""
+			MappingInformationType: "ByPolygonVertex"
+			ReferenceInformationType: "IndexToDirect"
+			Normals: *3 {
+				a: 0,0,1
+			} 
+			NormalsW: *1 {
+				a: 1
+			} 
+			NormalsIndex: *3 {
+				a: 0,0,0
+			} 
+		}
+		Layer: 0 {
+			Version: 100
+			LayerElement:  {
+				Type: "LayerElementNormal"
+				TypedIndex: 0
+			}
+		}
+	}
+	Geometry: 2469055503936, "Geometry::SharedAB", "Mesh" {
+		Vertices: *9 {
+			a: 0,0,0,1,0,0,0,1,0
+		} 
+		PolygonVertexIndex: *3 {
+			a: 0,1,-3
+		} 
+		Edges: *3 {
+			a: 0,1,2
+		} 
+		GeometryVersion: 124
+		LayerElementNormal: 0 {
+			Version: 102
+			Name: ""
+			MappingInformationType: "ByPolygonVertex"
+			ReferenceInformationType: "IndexToDirect"
+			Normals: *3 {
+				a: 0,0,1
+			} 
+			NormalsW: *1 {
+				a: 1
+			} 
+			NormalsIndex: *3 {
+				a: 0,0,0
+			} 
+		}
+		Layer: 0 {
+			Version: 100
+			LayerElement:  {
+				Type: "LayerElementNormal"
+				TypedIndex: 0
+			}
+		}
+	}
+	Geometry: 2469055537568, "Geometry::SharedBA", "Mesh" {
+		Vertices: *9 {
+			a: 0,0,0,1,0,0,0,1,0
+		} 
+		PolygonVertexIndex: *3 {
+			a: 0,1,-3
+		} 
+		Edges: *3 {
+			a: 0,1,2
+		} 
+		GeometryVersion: 124
+		LayerElementNormal: 0 {
+			Version: 102
+			Name: ""
+			MappingInformationType: "ByPolygonVertex"
+			ReferenceInformationType: "IndexToDirect"
+			Normals: *3 {
+				a: 0,0,1
+			} 
+			NormalsW: *1 {
+				a: 1
+			} 
+			NormalsIndex: *3 {
+				a: 0,0,0
+			} 
+		}
+		Layer: 0 {
+			Version: 100
+			LayerElement:  {
+				Type: "LayerElementNormal"
+				TypedIndex: 0
+			}
+		}
+	}
+	Model: 2469055415040, "Model::Child", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055434448, "Model::Inst", "Null" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",-90.0000093346673,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055452832, "Model::Inst|SrcCube|Dupli|", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055454816, "Model::OnlyA", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",-90.0000093346673,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055458864, "Model::Parent", "Null" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",-90.0000093346673,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055461392, "Model::Rig", "Null" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",-90.0000093346673,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055463376, "Model::RootOnly", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",-90.0000093346673,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055465360, "Model::Shared", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",-90.0000093346673,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055438512, "Model::SharedAB", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",-90.0000093346673,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055448512, "Model::SharedBA", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",-90.0000093346673,0,0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055450512, "Model::Bone", "LimbNode" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Rotation", "Lcl Rotation", "", "A",90.0000093346673,-0,0
+		}
+		Culling: "CullingOff"
+	}
+	Model: 2469055436512, "Model::Bone_end", "LimbNode" {
+		Version: 232
+		Properties70:  {
+			P: "InheritType", "enum", "", "",1
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Translation", "Lcl Translation", "", "A",0,1,0
+		}
+		Culling: "CullingOff"
+	}
+	CollectionExclusive: 2469055571200, "DisplayLayer::A", "DisplayLayer" {
+	}
+	CollectionExclusive: 2469055571392, "DisplayLayer::A_sub", "DisplayLayer" {
+	}
+	CollectionExclusive: 2469055571584, "DisplayLayer::B", "DisplayLayer" {
+	}
+	CollectionExclusive: 2469055571776, "DisplayLayer::Rig", "DisplayLayer" {
+	}
+}
+
+; Object connections
+;------------------------------------------------------------------
+
+Connections:  {
+	
+	;Model::Inst, Model::RootNode
+	C: "OO",2469055434448,0
+	
+	;Model::OnlyA, Model::RootNode
+	C: "OO",2469055454816,0
+	
+	;Model::Parent, Model::RootNode
+	C: "OO",2469055458864,0
+	
+	;Model::Rig, Model::RootNode
+	C: "OO",2469055461392,0
+	
+	;Model::RootOnly, Model::RootNode
+	C: "OO",2469055463376,0
+	
+	;Model::Shared, Model::RootNode
+	C: "OO",2469055465360,0
+	
+	;Model::SharedAB, Model::RootNode
+	C: "OO",2469055438512,0
+	
+	;Model::SharedBA, Model::RootNode
+	C: "OO",2469055448512,0
+	
+	;Geometry::Child, Model::Child
+	C: "OO",2469055383776,2469055415040
+	
+	;Model::Inst|SrcCube|Dupli|, Model::Inst
+	C: "OO",2469055452832,2469055434448
+	
+	;NodeAttribute::Inst, Model::Inst
+	C: "OO",2469026588928,2469055434448
+	
+	;Geometry::SrcCube, Model::Inst|SrcCube|Dupli|
+	C: "OO",2469055500544,2469055452832
+	
+	;Geometry::OnlyA, Model::OnlyA
+	C: "OO",2469055501392,2469055454816
+	
+	;Model::Child, Model::Parent
+	C: "OO",2469055415040,2469055458864
+	
+	;NodeAttribute::Parent, Model::Parent
+	C: "OO",2469026618080,2469055458864
+	
+	;Model::Bone, Model::Rig
+	C: "OO",2469055450512,2469055461392
+	
+	;NodeAttribute::Rig, Model::Rig
+	C: "OO",2469026618256,2469055461392
+	
+	;Geometry::RootOnly, Model::RootOnly
+	C: "OO",2469055502240,2469055463376
+	
+	;Geometry::Shared, Model::Shared
+	C: "OO",2469055503088,2469055465360
+	
+	;Geometry::SharedAB, Model::SharedAB
+	C: "OO",2469055503936,2469055438512
+	
+	;Geometry::SharedBA, Model::SharedBA
+	C: "OO",2469055537568,2469055448512
+	
+	;NodeAttribute::Bone, Model::Bone
+	C: "OO",2469055383056,2469055450512
+	
+	;Model::Bone_end, Model::Bone
+	C: "OO",2469055436512,2469055450512
+	
+	;NodeAttribute::Bone_end, Model::Bone_end
+	C: "OO",2469055383248,2469055436512
+	
+	;Model::Child, DisplayLayer::A
+	C: "OO",2469055415040,2469055571200
+	
+	;Model::OnlyA, DisplayLayer::A
+	C: "OO",2469055454816,2469055571200
+	
+	;Model::SharedAB, DisplayLayer::A
+	C: "OO",2469055438512,2469055571200
+	
+	;Model::SharedBA, DisplayLayer::A
+	C: "OO",2469055448512,2469055571200
+	
+	;Model::Shared, DisplayLayer::A_sub
+	C: "OO",2469055465360,2469055571392
+	
+	;Model::Inst, DisplayLayer::B
+	C: "OO",2469055434448,2469055571584
+	
+	;Model::Inst|SrcCube|Dupli|, DisplayLayer::B
+	C: "OO",2469055452832,2469055571584
+	
+	;Model::Parent, DisplayLayer::B
+	C: "OO",2469055458864,2469055571584
+	
+	;Model::Rig, DisplayLayer::Rig
+	C: "OO",2469055461392,2469055571776
+}
+;Takes section
+;----------------------------------------------------
+
+Takes:  {
+	Current: ""
+}

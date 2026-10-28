@@ -1,26 +1,26 @@
 # FBX + Layers for Blender
 
-A fork of Blender's bundled FBX add-on (`io_scene_fbx` 5.15.0, Blender 5.1) that adds support for **FBX Display Layers**, the layers you get from 3ds Max, Maya and other apps built on the Autodesk FBX SDK.
+FBX import and export for Blender with support for **FBX Display Layers**, the layers you get from 3ds Max, Maya and other apps built on the Autodesk FBX SDK.
 
-- **Import:** each Display Layer becomes a Blender **Collection** that holds the layer's objects. The layer's color, visibility and freeze state are applied to the collection.
-- **Export:** collections are written as Display Layers, with color, visibility and freeze. Max, Maya and other FBX SDK based apps read them back as layers.
+- **Import:** the file is imported by **Blender's own FBX importer**, the C++ one built on [ufbx](https://github.com/ufbx/ufbx). Each Display Layer then becomes a **Collection** holding the layer's objects, with the layer's color, visibility and freeze state.
+- **Export:** a fork of Blender's FBX exporter (`io_scene_fbx` 5.15.0) writes collections as Display Layers, with color, visibility and freeze. Max, Maya and other FBX SDK based apps read them back as layers.
 - **Also on export:**
   - Textures are copied next to the FBX by default, with relative paths, including packed images.
   - Instances, i.e. objects sharing a mesh, stay instances.
 
-It installs **alongside** the built-in FBX add-on and does not replace it. All other import/export options are the same as in Blender's own FBX add-on.
+It installs **alongside** Blender's built-in FBX support and does not replace it.
 
 ## Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [How the import works](#how-the-import-works)
 - [How layers are mapped](#how-layers-are-mapped)
 - [Textures](#textures)
 - [Instances](#instances)
-- [Why the Python importer and not Blender's C++ (ufbx) importer](#why-the-python-importer-and-not-blenders-c-ufbx-importer)
 - [Known limitations](#known-limitations)
 - [Development](#development)
-- [License](#license)
+- [Credits and licenses](#credits-and-licenses)
 
 ## Installation
 
@@ -29,28 +29,59 @@ It installs **alongside** the built-in FBX add-on and does not replace it. All o
 
 Requires Blender **5.1** or newer (tested on 5.1 and 5.2).
 
-**Updating:** install the new zip the same way, then **restart Blender**. Blender keeps the add-on's old Python modules loaded until it restarts. If several Blender windows are open, restart all of them.
+Platforms:
+
+- Windows x64
+- Linux x64
+- macOS (Apple Silicon and Intel)
+
+On other platforms only the *Legacy* import is available (see [Usage](#usage)).
+
+**Updating:** install the new zip the same way, then **restart Blender**. Blender keeps the add-on's old modules and library loaded until it restarts. If several Blender windows are open, restart all of them.
 
 ## Usage
 
-- **File → Import → FBX + Layers (.fbx)**
-- **File → Export → FBX + Layers (.fbx)**
+| Menu entry | What it does |
+|---|---|
+| **File → Import → FBX + Layers (.fbx)** | Blender's C++ importer, plus Display Layers → collections. **Recommended.** |
+| **File → Import → FBX + Layers (.fbx) (Legacy)** | Fork of Blender's Python importer, which Blender lists as "FBX (.fbx) (Legacy)", plus Display Layers → collections. Kept as a fallback while Blender still ships it. |
+| **File → Export → FBX + Layers (.fbx)** | Fork of Blender's FBX exporter, plus collections → Display Layers. |
 
-Blender's own entries stay available:
+- The import options are **the same as Blender's own "FBX (.fbx)" importer**. They are read from the running Blender, so they follow Blender updates automatically.
+- The export options are those of Blender's exporter. The only different default is **Path Mode = Copy** (see [Textures](#textures)).
 
-- Import: "FBX (.fbx)" (the C++ importer) and "FBX (.fbx) (Legacy)".
-- Export: "FBX (.fbx)".
+## How the import works
 
-Export options differ from the built-in exporter only in one default: **Path Mode = Copy** (see [Textures](#textures)).
+1. The file is read with **ufbx 0.20.0**, the same version Blender 5.1/5.2 ships, with the same load options as Blender's importer. This gives the nodes and their Display Layers (name, members, color, visibility, freeze). ufbx runs from a small native library included in the extension, through Python `ctypes`.
+2. **Blender's C++ importer** (`bpy.ops.wm.fbx_import`) imports the file with the options chosen in the dialog.
+3. Each layer member is matched to the object Blender created for it. Blender keeps no FBX id on imported objects, so the match uses:
+   - the **name**, ignoring the `.001`-style suffix Blender adds on clashes;
+   - for nodes sharing a name, the **world position**;
+   - then the **creation order**, which is how Blender numbers duplicates.
+
+   This also works with duplicate node names in the file and with names that already exist in the scene. Layer members that cannot be matched are listed in a warning.
+4. One collection per layer is created and the matched objects are moved into it (see [Layer properties](#layer-properties)).
+
+**Why not just the Legacy importer?** It is the old Python importer, which Blender has marked "Legacy" since 5.0 and will likely remove. Building on Blender's C++ importer and on the same ufbx version keeps this add-on aligned with Blender and ufbx updates. It also brings what the C++ importer does better:
+
+| | FBX + Layers (default) | FBX + Layers (Legacy) |
+|---|---|---|
+| Display Layers → collections | ✅ | ✅ |
+| Instances (shared meshes, per-object materials) | ✅ | ✅ |
+| Import speed on large files | fast (C++) | slower (Python) |
+| ASCII FBX files | ✅ | ❌ |
+| FBX older than 7.1 (version < 7100) | ✅ | ❌ |
+| Needs the native ufbx library | yes | no |
 
 ## How layers are mapped
 
 ### Import
 
 - For every Display Layer in the file, a collection with the layer's name is created as a child of the active collection, and the layer's objects are moved into it.
-- Objects that are not in a layer stay in the active collection, as with the built-in importer.
+- Objects that are not in a layer stay in the active collection, as with Blender's importer.
 - A layer with no importable objects still creates an (empty) collection.
 - Bones inside a layer are ignored, because a bone is not an object in Blender and cannot belong to a collection. The armature stays where the importer puts it.
+- When Blender adds a `<name>_GeomAdjust` helper object for a node's geometry transform, the helper goes into the same collection as the node.
 - If a collection with the same name already exists, a new one is created anyway (Blender names it `.001`), the same way imported objects are renamed.
 
 ### Export
@@ -91,63 +122,35 @@ The layer color only changes the collection's color tag. Object display colors a
 ## Textures
 
 - **Path Mode** defaults to **Copy**: textures are copied into the **same folder as the `.fbx`** and referenced with relative paths (just the file name).
-  - The built-in exporter defaults to *Auto* and, in *Copy* mode, puts textures in a `<name>.fbm` subfolder.
+  - Blender's exporter defaults to *Auto* and, in *Copy* mode, puts textures in a `<name>.fbm` subfolder.
 - **Packed images** are written from their packed data.
   - This covers textures that came from an FBX with embedded media: Blender keeps those images packed, with a path to a folder that does not exist.
-  - The built-in exporter skips these with "missing …, not copying".
+  - Blender's exporter skips these with "missing …, not copying".
 - **Embed Textures** still works as before: the textures go inside the FBX.
 
 ## Instances
 
 In FBX, objects that share a mesh are one Geometry connected to several nodes, and **materials belong to the node**, not to the geometry.
 
-- Objects that share a mesh in Blender keep sharing one FBX Geometry, **even when they use different Object-linked materials**.
-- The mesh is only duplicated when the objects' material slot layouts are incompatible: slot *N* has to give the same FBX material index for every object. For example, a two-slot mesh where one object uses two different materials and another object uses the same material twice cannot be shared.
-- The built-in exporter instead duplicates the mesh for every object that has Object-linked materials, so instances coming from Max or Maya are exported as separate meshes.
-
-## Why the Python importer and not Blender's C++ (ufbx) importer
-
-Since Blender 5.0 the default FBX importer is written in C++ and built on [ufbx](https://github.com/ufbx/ufbx). The Python importer this add-on is based on is listed as "FBX (.fbx) (Legacy)".
-
-**ufbx reads everything this add-on needs.** It exposes Display Layers (`ufbx_display_layer`: member nodes, `visible`, `frozen`, `ui_color`) and instancing. However, **Blender's C++ importer does not use them**. Tested with Blender 5.1 on a file with four layers and three instances of one mesh:
-
-- every object ended up in a single collection;
-- every instance got its own mesh.
-
-**The C++ importer cannot be extended by an add-on.** It is compiled into Blender. Changing it means building Blender and getting the change accepted upstream, which is the right long-term fix but outside the scope of an add-on.
-
-The Python importer, on the other hand, can be forked and shipped as an extension, which is what this add-on does.
-
-**A hybrid was considered and rejected.** It would import with the C++ importer and then read the file again in Python to apply the layers.
-
-- Imported objects would have to be matched to FBX nodes by name, which breaks with duplicate names and `.001` renames.
-- Instances would still be lost.
-
-Python bindings for ufbx exist on PyPI, but their provenance could not be verified and they ship only compiled binaries, so they are not used.
-
-### Trade-offs
-
-| | This add-on (Python importer) | Blender's C++ importer |
-|---|---|---|
-| Display Layers → collections | ✅ (with color, visibility, freeze) | ❌ |
-| Instances (shared meshes) | ✅ | ❌ (one mesh per instance) |
-| Import speed on large files | slower | much faster |
-| ASCII FBX files | ❌ ("ASCII FBX files are not supported") | ✅ |
-| FBX older than 7.1 (version < 7100) | ❌ | ✅ |
-
-For ASCII FBX files or very old FBX versions, use Blender's own importer, or convert the file to binary FBX 7.1+ first, for example with Autodesk FBX Converter.
-
-There is only one FBX exporter in Blender, written in Python, so this add-on's exporter is a superset of the built-in one.
+- **Import:** both import entries keep instances as one shared mesh, with per-object materials where they differ.
+- **Export:** objects that share a mesh keep sharing one FBX Geometry, **even when they use different Object-linked materials**.
+  - The mesh is only duplicated when the objects' material slot layouts are incompatible: slot *N* has to give the same FBX material index for every object. For example, a two-slot mesh where one object uses two different materials and another object uses the same material twice cannot be shared.
+  - Blender's exporter instead duplicates the mesh for every object with Object-linked materials, so instances coming from Max or Maya are exported as separate meshes.
 
 ## Known limitations
 
-- Import uses the Python importer, so the limits in the table above apply: no ASCII FBX, no FBX older than 7.1, slower than the C++ importer.
+- **Import (default entry)**
+  - Layer members are matched to imported objects by name, position and order, because Blender keeps no FBX id on objects. Ambiguous cases, such as nodes with the same name at the same position, could be swapped. Members that cannot be matched are reported.
+  - It needs the bundled native library. On unsupported platforms, use the Legacy entry.
+- **Import (Legacy entry)**
+  - No ASCII FBX and no FBX older than 7.1.
+  - Slower on large files.
 - Bones inside a layer are ignored on import and never get a layer on export.
 - An object in several collections is exported in one layer only (the first, see [Export](#export)).
 - Collection color tags are an approximation of the layer color. The exact color survives a round trip only while the tag is not changed.
 - Show maps to the eye icon of the view layer used for import/export. Other view layers are not touched.
 - A packed image with no file path at all (e.g. a texture painted in Blender and never saved) may be written without a file extension.
-- Export is always binary FBX 7.4, as with the built-in exporter.
+- Export is always binary FBX 7.4, as with Blender's exporter.
 - Drag and drop of `.fbx` files is not handled; it stays with Blender's own importer.
 - Tested on Blender 5.1 and 5.2 only.
 
@@ -157,34 +160,80 @@ The SDK silently drops any layer object that is written without an (empty) child
 
 ## Development
 
-- Every change to the original add-on code is marked with `# FBX-LAYERS begin` / `# FBX-LAYERS end`. The new logic lives in `io_scene_fbx_layers/layers.py`.
-- The first commit of this repository is the unmodified `io_scene_fbx` 5.15.0. Diff against it to see every change made by the fork.
-- To port the fork to a newer `io_scene_fbx`, copy the new add-on files and re-apply the marked blocks.
+### Layout
 
-Run the tests from the repository root:
+| Path | What |
+|---|---|
+| `io_scene_fbx_layers/` | The extension. |
+| `io_scene_fbx_layers/import_cpp.py` | Default import: wraps `wm.fbx_import`, mirrors its options. |
+| `io_scene_fbx_layers/ufbx_reader.py` | Loads the native library with `ctypes` and reads nodes and layers. |
+| `io_scene_fbx_layers/layers.py` | Layer ↔ collection logic for import (both entries) and export. |
+| other `io_scene_fbx_layers/*.py` | Fork of Blender's `io_scene_fbx` 5.15.0. Every change is marked `# FBX-LAYERS begin` / `# FBX-LAYERS end`. The first commit of this repository is the unmodified add-on, to diff against. |
+| `native/fbxl_ufbx.c` | Small C layer over ufbx: loads a file with Blender's options and returns nodes and layers as JSON. |
+| `native/ufbx/` | ufbx, a verbatim copy of Blender's `extern/ufbx` (see `README.blender` for the version). |
+
+### Keeping up with Blender
+
+- **When Blender updates ufbx:**
+  1. Copy the new files from Blender's `extern/ufbx` into `native/ufbx/`.
+  2. Check that the load options in `native/fbxl_ufbx.c` still match `source/blender/io/fbx/importer/fbx_import.cc`.
+  3. Rebuild and run the tests.
+- **When Blender changes the importer's options:** nothing to do, they are mirrored at runtime.
+- **When Blender changes the Python exporter:** copy the new add-on files and re-apply the marked `FBX-LAYERS` blocks.
+
+### Building the native library
+
+- **Windows** (Visual Studio 2022, x64): `native\build_windows.bat`
+- **Linux / macOS:** `sh native/build_unix.sh`. macOS builds a universal arm64 + x86_64 library.
+
+The library goes into `io_scene_fbx_layers/lib/`.
+
+[GitHub Actions](.github/workflows/build.yml) builds all platforms on every push. Linux builds in a manylinux_2_28 container, so the library loads on older distributions. On a `v*` tag, the workflow attaches the packaged zip to the release.
+
+### Tests
 
 ```
 blender --background --factory-startup --python-exit-code 1 --python tests/run_tests.py
 ```
 
-The tests cover:
+Import tests run with **both** import entries. The tests cover:
 
 - layer export rules;
 - export → import round trips;
 - layer color, visibility and freeze;
+- duplicate node names and names that already exist in the scene;
 - texture copying, including packed images;
 - instances;
-- the same FBX content as the built-in exporter once the layer data is stripped (headers and timestamps aside).
+- an ASCII FBX file (`tests/data/layers_ascii.fbx`, converted with the Autodesk FBX SDK);
+- the same FBX content as Blender's exporter once the layer data is stripped.
 
-Import tests against real files run only if you drop FBX files that contain Display Layers into `tests/samples/`. No sample assets are distributed.
+Import tests against real third-party files run only if you drop FBX files that contain Display Layers into `tests/samples/`. None are distributed.
 
-Build the installable zip:
+### Packaging
 
 ```
-cd io_scene_fbx_layers
-blender --command extension build --output-dir ../dist
+python tools/package.py
 ```
 
-## License
+This writes `dist/io_scene_fbx_layers-<version>.zip` with the libraries present in `lib/`. `--all-platforms` makes it fail if any library is missing.
 
-GPL-2.0-or-later, the same license as the original add-on. Based on `io_scene_fbx` by the Blender Foundation.
+## Credits and licenses
+
+This add-on builds on the work of others:
+
+- **Blender's FBX add-on** (`io_scene_fbx`) by the Blender Foundation.
+  - Original authors: Campbell Barton, Bastien Montagne, Jens Restemeier and @Mysteryem.
+  - The importer and exporter in this repository are a fork of it.
+  - License: GPL-2.0-or-later.
+- **[ufbx](https://github.com/ufbx/ufbx)** by Samuli Raivio, the FBX loader used by Blender's C++ importer and by this add-on to read Display Layers.
+  - License: dual MIT / public domain (Unlicense). It is used here under the MIT license, as Blender does.
+  - `native/ufbx/` is an unmodified copy of the version Blender ships.
+  - Its license text is in `native/ufbx/LICENSE` and, in the distributed extension, in `lib/LICENSE-ufbx.txt`.
+- **Blender's C++ FBX importer**: the ufbx load options in `native/fbxl_ufbx.c` are taken from Blender's `source/blender/io/fbx/importer/fbx_import.cc`, so that ufbx sees the same nodes as Blender does.
+
+The add-on as a whole is licensed **GPL-2.0-or-later** (see [`LICENSE`](LICENSE)), the license of the code it is based on.
+
+- The native libraries in the release zip are built from `native/`.
+- The complete source of every release is in this repository at the matching version tag (see `lib/README.txt` in the extension).
+
+This project is not affiliated with or endorsed by the Blender Foundation or Autodesk. Blender is a trademark of the Blender Foundation; FBX, 3ds Max and Maya are trademarks of Autodesk, Inc.

@@ -7,6 +7,8 @@
 # In FBX a Display Layer is a 'CollectionExclusive' object of class 'DisplayLayer', and each Model in it has an extra
 # "OO" connection (Model -> layer). 'Exclusive' means a Model belongs to at most one layer.
 
+import re
+
 import bpy
 
 from .fbx_utils import (
@@ -153,12 +155,34 @@ def fbx_data_display_layer_elements(root, scene_data):
 
 # ##### Import #####
 
-def import_display_layers(fbx_table_nodes, fbx_connections, fbx_helper_nodes, view_layer, fbx_tmpl):
+def _new_layer_collection(parent_layer_collection, name, color, show, freeze):
     """
-    Create one collection per Display Layer, as a child of the collection the importer linked the objects to, and move
-    the layer's objects into it. Bones in a layer are ignored.
+    Collection for one Display Layer, child of the collection the importer linked the objects to.
     Layer color -> collection color tag (exact color kept in COLLECTION_COLOR_PROP), Show -> hidden in the view layer
     (eye icon), Freeze -> collection not selectable.
+    """
+    collection = bpy.data.collections.new(name)
+    parent_layer_collection.collection.children.link(collection)
+    collection.color_tag = _nearest_color_tag(color)
+    if collection.color_tag != 'NONE':
+        collection[COLLECTION_COLOR_PROP] = color
+        collection.id_properties_ui(COLLECTION_COLOR_PROP).update(subtype='COLOR', min=0.0, max=1.0)
+    collection.hide_select = freeze
+    parent_layer_collection.children[collection.name].hide_viewport = not show
+    return collection
+
+
+def _move_to_collection(obj, collection, parent_collection):
+    if collection.objects.get(obj.name) is None:
+        collection.objects.link(obj)
+    if parent_collection.objects.get(obj.name) is obj:
+        parent_collection.objects.unlink(obj)
+
+
+def import_display_layers(fbx_table_nodes, fbx_connections, fbx_helper_nodes, view_layer, fbx_tmpl):
+    """
+    Legacy (Python) importer: create one collection per Display Layer and move the layer's objects into it.
+    Bones in a layer are ignored.
     """
     from .import_fbx import (
         elem_find_first,
@@ -175,19 +199,13 @@ def import_display_layers(fbx_table_nodes, fbx_connections, fbx_helper_nodes, vi
     for fbx_uuid, (fbx_obj, _bl_data) in fbx_table_nodes.items():
         if fbx_obj.id != FBX_LAYER_TYPE or fbx_obj.props[2] != FBX_LAYER_CLASS:
             continue
-        collection = bpy.data.collections.new(elem_name_ensure_class(fbx_obj, FBX_LAYER_CLASS))
-        parent_collection.children.link(collection)
-        layer_collections[fbx_uuid] = collection
-
         fbx_props = (elem_find_first(fbx_obj, b'Properties70'), tmpl_props)
-        color = tuple(elem_props_get_color_rgb(fbx_props, b'Color', FBX_LAYER_DEFAULT_COLOR))
-        collection.color_tag = _nearest_color_tag(color)
-        if collection.color_tag != 'NONE':
-            collection[COLLECTION_COLOR_PROP] = color
-            collection.id_properties_ui(COLLECTION_COLOR_PROP).update(subtype='COLOR', min=0.0, max=1.0)
-        collection.hide_select = elem_props_get_bool(fbx_props, b'Freeze', False)
-        layer_collection = parent_layer_collection.children[collection.name]
-        layer_collection.hide_viewport = not elem_props_get_bool(fbx_props, b'Show', True)
+        layer_collections[fbx_uuid] = _new_layer_collection(
+            parent_layer_collection,
+            elem_name_ensure_class(fbx_obj, FBX_LAYER_CLASS),
+            tuple(elem_props_get_color_rgb(fbx_props, b'Color', FBX_LAYER_DEFAULT_COLOR)),
+            elem_props_get_bool(fbx_props, b'Show', True),
+            elem_props_get_bool(fbx_props, b'Freeze', False))
 
     if not layer_collections:
         return
@@ -202,8 +220,112 @@ def import_display_layers(fbx_table_nodes, fbx_connections, fbx_helper_nodes, vi
         helper = fbx_helper_nodes.get(c_src)
         if helper is None or helper.is_bone or helper.bl_obj is None:
             continue
-        obj = helper.bl_obj
-        if collection.objects.get(obj.name) is None:
-            collection.objects.link(obj)
-        if parent_collection.objects.get(obj.name) is obj:
-            parent_collection.objects.unlink(obj)
+        _move_to_collection(helper.bl_obj, collection, parent_collection)
+
+
+# ##### Import on top of Blender's C++ importer (ufbx) #####
+
+_NAME_SUFFIX = re.compile(r"^(.*)\.(\d{3,})$")
+_MAX_NAME_BYTES = 63
+
+
+def _split_name(name):
+    """'Cube.003' -> ('Cube', 3), 'Cube' -> ('Cube', 0)."""
+    match = _NAME_SUFFIX.match(name)
+    return (match.group(1), int(match.group(2))) if match else (name, 0)
+
+
+def _truncate_name(name):
+    data = name.encode("utf-8")[:_MAX_NAME_BYTES]
+    return data.decode("utf-8", "ignore")
+
+
+def _same_base(node_name, obj_base):
+    # Blender truncates names to 63 bytes, and shortens them further to fit a .NNN suffix.
+    if obj_base == node_name:
+        return True
+    return len(obj_base.encode("utf-8")) >= _MAX_NAME_BYTES - 5 and node_name.startswith(obj_base)
+
+
+def _object_name_for_node(nodes, node):
+    # Same naming as Blender's importer (fbx_import_mesh.cc): geometry transform helpers are "<parent>_GeomAdjust".
+    if node["helper"] and node["parent"] >= 0:
+        return _truncate_name(nodes[node["parent"]]["name"] + "_GeomAdjust")
+    return _truncate_name(node["name"])
+
+
+def _match_nodes_to_objects(nodes, wanted, new_objects):
+    """
+    Map ufbx node indices in `wanted` to the objects Blender's C++ importer created for them.
+    Blender keeps no FBX id on objects: match by name (ignoring Blender's .NNN suffix), then by world position among
+    nodes sharing a name, then by order (Blender numbers duplicates in creation order).
+    """
+    objects_by_base = {}
+    for obj in new_objects:
+        base, number = _split_name(obj.name)
+        objects_by_base.setdefault(base, []).append((number, obj))
+
+    groups = {}
+    for index, node in enumerate(nodes):
+        if node["root"] or node["bone"]:
+            continue  # Bones become Blender bones, not objects.
+        groups.setdefault(_object_name_for_node(nodes, node), []).append(index)
+
+    mapping = {}
+    for name, indices in groups.items():
+        if not any(i in wanted for i in indices):
+            continue
+        candidates = [item for base, items in objects_by_base.items() if _same_base(name, base) for item in items]
+        if not candidates:
+            continue
+        pairs = []
+        for i in indices:
+            pos = nodes[i]["pos"]
+            for number, obj in candidates:
+                dist = sum((a - b) ** 2 for a, b in zip(obj.matrix_world.translation, pos))
+                pairs.append((round(dist, 6), i, number, obj))
+        pairs.sort(key=lambda pair: pair[:3])
+        used_nodes, used_objects = set(), set()
+        for _dist, i, _number, obj in pairs:
+            if i in used_nodes or obj in used_objects:
+                continue
+            used_nodes.add(i)
+            used_objects.add(obj)
+            mapping[i] = obj
+    return {i: obj for i, obj in mapping.items() if i in wanted}
+
+
+def apply_ufbx_layers(scene_info, new_objects, view_layer):
+    """
+    After Blender's C++ importer: create one collection per Display Layer and move the layer's objects into it.
+    Geometry transform helper objects follow their node. Returns the names of layer nodes that could not be matched
+    to an imported object (bones excluded).
+    """
+    nodes = scene_info["nodes"]
+    file_layers = scene_info["layers"]
+    if not file_layers:
+        return []
+
+    wanted = {i for layer in file_layers for i in layer["nodes"]}
+    helpers = {}
+    for index, node in enumerate(nodes):
+        if node["helper"] and node["parent"] in wanted:
+            helpers.setdefault(node["parent"], []).append(index)
+    wanted.update(i for indices in helpers.values() for i in indices)
+    mapping = _match_nodes_to_objects(nodes, wanted, new_objects)
+
+    parent_layer_collection = view_layer.active_layer_collection
+    parent_collection = parent_layer_collection.collection
+    unmatched = []
+    for layer in file_layers:
+        collection = _new_layer_collection(
+            parent_layer_collection, _truncate_name(layer["name"]), tuple(layer["color"]),
+            layer["visible"], layer["frozen"])
+        for i in layer["nodes"]:
+            for j in [i] + helpers.get(i, []):
+                obj = mapping.get(j)
+                if obj is not None:
+                    _move_to_collection(obj, collection, parent_collection)
+                elif j == i and not nodes[i]["bone"]:
+                    unmatched.append(nodes[i]["name"])
+    return unmatched

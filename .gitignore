@@ -1,8 +1,12 @@
 __pycache__/
 *.pyc
 
-# Build output (attached to GitHub releases instead).
+# Build output (attached to GitHub releases instead). The ufbx libraries are built by CI (.github/workflows).
 dist/
+native/build/
+io_scene_fbx_layers/lib/*.dll
+io_scene_fbx_layers/lib/*.so
+io_scene_fbx_layers/lib/*.dylib
 
 # Local-only: third-party sample assets and internal notes.
 example/

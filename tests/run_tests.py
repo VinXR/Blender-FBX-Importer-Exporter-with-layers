@@ -16,6 +16,8 @@ import bpy
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAMPLES = os.path.join(ROOT, "tests", "samples")
 EXAMPLE = os.path.join(ROOT, "example", "Prova_00.fbx")
+# ASCII version of the test scene of build_test_scene(), converted with the Autodesk FBX SDK.
+ASCII_SAMPLE = os.path.join(ROOT, "tests", "data", "layers_ascii.fbx")
 OUT_DIR = tempfile.mkdtemp(prefix="fbx_layers_")
 
 sys.path.insert(0, ROOT)
@@ -35,6 +37,10 @@ def clear_scene():
         bpy.data.objects.remove(ob)
     for col in list(bpy.data.collections):
         bpy.data.collections.remove(col)
+    # Leftover datablocks would make re-imported names get a .NNN suffix.
+    for datablocks in (bpy.data.meshes, bpy.data.materials, bpy.data.armatures):
+        for datablock in list(datablocks):
+            datablocks.remove(datablock)
     view_layer = bpy.context.view_layer
     view_layer.active_layer_collection = view_layer.layer_collection
 
@@ -151,9 +157,16 @@ def check(cond, msg):
         raise AssertionError(msg)
 
 
-def import_fork(path):
-    clear_scene()
-    check(bpy.ops.import_scene.fbx_layers(filepath=path) == {'FINISHED'}, "import failed: " + path)
+# Import tests run with both importers: "cpp" (default, Blender's C++ importer + ufbx) and "legacy" (Python).
+IMPORTERS = {"cpp": "fbx_layers", "legacy": "fbx_layers_legacy"}
+current_importer = ["cpp"]
+
+
+def import_fork(path, clear=True):
+    if clear:
+        clear_scene()
+    op = getattr(bpy.ops.import_scene, IMPORTERS[current_importer[0]])
+    check(op(filepath=path) == {'FINISHED'}, "import failed: " + path)
 
 
 def collection_members(name):
@@ -388,6 +401,77 @@ def test_layer_properties():
     check(got["Frozen"].hide_select and not got["Plain"].hide_select, "Frozen re-imported")
 
 
+def _rename_models(src, dst, renames):
+    """Copy an FBX file renaming some Model nodes (through fbx2json/json2fbx), to get names Blender cannot produce."""
+    import importlib
+    import json
+    import shutil
+    from io_scene_fbx_layers import data_types, encode_bin, fbx2json, json2fbx
+
+    sys.modules.setdefault("encode_bin", encode_bin)  # json2fbx imports these as top-level modules.
+    sys.modules.setdefault("data_types", data_types)
+    importlib.reload(fbx2json)  # Its FBX version globals can only be initialized once per module load.
+    tmp = os.path.splitext(dst)[0] + "_src.fbx"
+    shutil.copyfile(src, tmp)
+    fbx2json.fbx2json(tmp)
+    with open(os.path.splitext(tmp)[0] + ".json", encoding="utf-8") as f:
+        data = json.load(f)
+    objects = next(e for e in data if e[0] == "Objects")[3]
+    for elem in objects:
+        if elem[0] == "Model":
+            name = elem[1][1].split("::")[0]
+            if name in renames:
+                elem[1][1] = renames[name] + "::Model"
+    out_json = os.path.splitext(dst)[0] + ".json"
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    json2fbx.json2fbx(out_json)
+    check(os.path.isfile(dst), "renamed FBX not written")
+
+
+def test_duplicate_names():
+    """Three nodes named "Dup" in two layers, imported next to an existing "Dup": each goes to its own layer."""
+    clear_scene()
+    l1, l2 = new_collection("L1"), new_collection("L2")
+    a = new_object("DupA", l1)
+    b = new_object("DupB", l2)
+    group = new_object("Grp", l2, mesh=False)
+    c = new_object("DupC", l1)
+    c.parent = group
+    a.location, b.location, group.location = (0, 0, 0), (5, 0, 0), (0, 3, 0)
+    c.location = (10, 0, 0)
+    src = os.path.join(OUT_DIR, "dupes_names.fbx")
+    check(bpy.ops.export_scene.fbx_layers(filepath=src) == {'FINISHED'}, "export failed")
+    path = os.path.join(OUT_DIR, "dupes.fbx")
+    _rename_models(src, path, {"DupA": "Dup", "DupB": "Dup", "DupC": "Dup"})
+
+    clear_scene()
+    existing = new_object("Dup", bpy.context.scene.collection, mesh=False)
+    existing.location = (100, 0, 0)
+    import_fork(path, clear=False)
+    bpy.context.view_layer.update()
+
+    def positions(name):
+        return sorted(tuple(round(v, 3) for v in ob.matrix_world.translation)
+                      for ob in bpy.data.collections[name].objects if ob.name.startswith("Dup"))
+
+    check(positions("L1") == [(0.0, 0.0, 0.0), (10.0, 3.0, 0.0)], "L1 dupes: %r" % positions("L1"))
+    check(positions("L2") == [(5.0, 0.0, 0.0)], "L2 dupes: %r" % positions("L2"))
+    check("Grp" in bpy.data.collections["L2"].objects, "Grp should be in L2")
+    check(existing.name == "Dup" and existing.users_collection[0] == bpy.context.scene.collection,
+          "existing object must not be touched")
+
+
+def test_import_ascii(path):
+    """ASCII FBX (only Blender's C++ importer reads it)."""
+    order, _members, _defs = (["A", "A_sub", "B", "Rig"], None, None)
+    import_fork(path)
+    for layer in order:
+        check(bpy.data.collections.get(layer) is not None, "missing collection " + layer)
+    check(collection_members("A_sub") == ["Shared"], "A_sub: %r" % collection_members("A_sub"))
+    check(collection_members("A") == ["Child", "OnlyA", "SharedAB", "SharedBA"], "A: %r" % collection_members("A"))
+
+
 def test_import_sample(path):
     order, members, _defs = read_layers(path)
     check(order, "sample has no layers: " + path)
@@ -411,24 +495,34 @@ def main():
             results.append((name, False, traceback.format_exc()))
             return None
 
+    from io_scene_fbx_layers import ufbx_reader
+    print("ufbx library: %s" % (ufbx_reader.ufbx_version() if ufbx_reader.is_available() else "NOT AVAILABLE"))
+
     exported = run("export: collections -> display layers", test_export_layers)
-    if exported:
-        run("round trip: export -> import", test_round_trip, *exported)
     run("M1: same output as official exporter (layers stripped)", test_same_as_official)
     run("export: textures copied next to the FBX, relative paths", test_textures_copied_next_to_fbx)
     run("export: packed textures written next to the FBX", test_packed_textures_written_next_to_fbx)
-    run("export: instances keep a shared Geometry", test_shared_mesh_kept_with_object_materials)
-    run("layer color / visibility / freeze round trip", test_layer_properties)
     # Sample FBX files with Display Layers are not distributed (third-party assets): drop your own in tests/samples/.
     samples = [EXAMPLE] if os.path.isfile(EXAMPLE) else []
     if os.path.isdir(SAMPLES):
         samples += sorted(os.path.join(SAMPLES, f) for f in os.listdir(SAMPLES) if f.lower().endswith(".fbx"))
     if not samples:
         print("No sample FBX files found, skipping the import sample tests.")
-    for path in samples:
-        got = run("import: " + os.path.basename(path), test_import_sample, path)
-        if got is not None:
-            print("    %s -> %r" % (os.path.basename(path), got))
+
+    for importer in IMPORTERS:
+        current_importer[0] = importer
+        if exported:
+            run("[%s] round trip: export -> import" % importer, test_round_trip, *exported)
+        run("[%s] instances keep a shared Geometry" % importer, test_shared_mesh_kept_with_object_materials)
+        run("[%s] layer color / visibility / freeze round trip" % importer, test_layer_properties)
+        run("[%s] duplicate node names" % importer, test_duplicate_names)
+        for path in samples:
+            got = run("[%s] import: %s" % (importer, os.path.basename(path)), test_import_sample, path)
+            if got is not None:
+                print("    [%s] %s -> %r" % (importer, os.path.basename(path), got))
+    current_importer[0] = "cpp"
+    if os.path.isfile(ASCII_SAMPLE):
+        run("[cpp] import ASCII FBX", test_import_ascii, ASCII_SAMPLE)
 
     print()
     for name, ok, err in results:

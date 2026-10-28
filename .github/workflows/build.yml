@@ -1,0 +1,78 @@
+name: Build
+
+# Builds the ufbx layer reader for every platform and packages the extension zip.
+# On a version tag (v*), the zip is attached to the GitHub release (created from the tag message if missing).
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build DLL
+        shell: cmd
+        run: native\build_windows.bat
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lib-windows
+          path: io_scene_fbx_layers/lib/fbxl_ufbx_windows_x64.dll
+
+  linux:
+    runs-on: ubuntu-latest
+    # Old glibc (2.28, same baseline as Blender's Linux builds) so the library loads on older distributions.
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build shared library
+        run: sh native/build_unix.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lib-linux
+          path: io_scene_fbx_layers/lib/fbxl_ufbx_linux_x64.so
+
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build universal dylib
+        run: sh native/build_unix.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lib-macos
+          path: io_scene_fbx_layers/lib/fbxl_ufbx_macos.dylib
+
+  package:
+    needs: [windows, linux, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: lib-*
+          path: io_scene_fbx_layers/lib
+          merge-multiple: true
+      - name: Package extension
+        run: python3 tools/package.py --all-platforms
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: dist/*.zip
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.zip --clobber
+          else
+            gh release create "$TAG" dist/*.zip --title "FBX + Layers ${TAG#v}" --notes-from-tag
+          fi

@@ -34,14 +34,18 @@ from bpy_extras.io_utils import (
     axis_conversion,
     poll_file_object_drop,
 )
+# FBX-LAYERS begin
+from . import import_cpp
+# FBX-LAYERS end
 
 
 @orientation_helper(axis_forward='-Z', axis_up='Y')
 class ImportFBX(bpy.types.Operator, ImportHelper):
     """Load a FBX file"""
     # FBX-LAYERS begin
-    bl_idname = "import_scene.fbx_layers"
-    bl_label = "Import FBX + Layers"
+    # The Python ("Legacy") importer, kept next to the default import built on Blender's C++ importer (import_cpp.py).
+    bl_idname = "import_scene.fbx_layers_legacy"
+    bl_label = "Import FBX + Layers (Legacy)"
     # FBX-LAYERS end
     bl_options = {'UNDO', 'PRESET'}
 
@@ -711,7 +715,8 @@ def export_panel_animation(layout, operator):
 
 # FBX-LAYERS begin
 def menu_func_import(self, context):
-    self.layout.operator(ImportFBX.bl_idname, text="FBX + Layers (.fbx)")
+    self.layout.operator(import_cpp.ImportFBXLayers.bl_idname, text="FBX + Layers (.fbx)")
+    self.layout.operator(ImportFBX.bl_idname, text="FBX + Layers (.fbx) (Legacy)")
 
 
 def menu_func_export(self, context):
@@ -728,6 +733,9 @@ classes = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    # FBX-LAYERS begin
+    import_cpp.register()
+    # FBX-LAYERS end
 
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
@@ -737,6 +745,9 @@ def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
+    # FBX-LAYERS begin
+    import_cpp.unregister()
+    # FBX-LAYERS end
     for cls in classes:
         bpy.utils.unregister_class(cls)
 

@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "io_scene_fbx_layers"
-version = "1.1.0"
+version = "2.0.0"
 name = "FBX + Layers"
 tagline = "FBX import/export that maps FBX Display Layers to collections"
 maintainer = "VinXR"
@@ -17,5 +17,9 @@ license = [
 ]
 copyright = [
   "2011-2023 Blender Foundation",
+  "2020 Samuli Raivio (ufbx, used under the MIT license, see lib/LICENSE-ufbx.txt)",
   "2026 VinXR",
 ]
+
+[permissions]
+files = "Import and export FBX files and their textures"
