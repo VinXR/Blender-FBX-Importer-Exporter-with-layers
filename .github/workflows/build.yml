@@ -71,6 +71,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
+          # actions/checkout turns annotated tags into lightweight ones: fetch the real tag for its message.
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" dist/*.zip --clobber
           else
