@@ -23,7 +23,7 @@ Requires Blender **5.1** or newer (tested on 5.1 and 5.2).
 - Objects that are not in a layer stay in the active collection, as with the built-in importer.
 - A layer with no importable objects still creates an (empty) collection.
 - Bones inside a layer are ignored, because a bone is not an object in Blender and cannot belong to a collection. The armature stays where the importer puts it.
-- Layer properties (color, visibility, freeze) are not read.
+- Layer properties are mapped as described under [Layer properties](#layer-properties).
 
 ### Export
 
@@ -37,6 +37,23 @@ An FBX object can be in at most one Display Layer, while a Blender object can be
 - Instances (collection instances, duplis) get the layer of the object that instances them.
 - Only collections with at least one exported object are written. The usual export filters still apply: selected only, visible only, active collection, and so on.
 
+### Layer properties
+
+| FBX layer | Blender collection |
+|---|---|
+| **Color** | Collection **color tag**. Blender only has 8 theme colors, so the closest tag is used, and the default grey means no tag. The exact color is kept in the collection custom property `fbx_layer_color`. |
+| **Show** = off | Collection hidden in the view layer (eye icon). |
+| **Freeze** = on | Collection not selectable. |
+
+On export:
+
+- **Color**
+  - If the collection still has the tag it got on import, the exact `fbx_layer_color` is written.
+  - If you changed the tag in Blender, the theme color of the new tag is written.
+  - With no tag, the default grey is written.
+- **Show** is off when the collection is hidden in the exported view layer or disabled in viewports.
+- **Freeze** is on when the collection is not selectable.
+
 ## Other differences from the built-in exporter
 
 - **Textures are copied next to the FBX by default.** Path Mode defaults to *Copy*. Textures go in the same folder as the `.fbx`, not in a `<name>.fbm` subfolder, and are referenced with relative paths.
@@ -48,7 +65,9 @@ An FBX object can be in at most one Display Layer, while a Blender object can be
 
 Notes:
 
-- Import is based on the Python FBX importer, which Blender 5.1 lists as "FBX (.fbx) (Legacy)". Blender's new default FBX importer is a separate C++ importer.
+- Import is based on the Python FBX importer, which Blender 5.1 lists as "FBX (.fbx) (Legacy)".
+  - Blender's new default FBX importer is written in C++ and built into Blender, so an add-on cannot extend it.
+  - It also ignores Display Layers and does not keep instances: each instance gets its own mesh.
 - Drag and drop of `.fbx` files is not handled; it stays with Blender's own importer.
 
 ## Development

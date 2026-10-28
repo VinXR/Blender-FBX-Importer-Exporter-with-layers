@@ -3563,7 +3563,8 @@ def load(operator, context, filepath="",
     # FBX-LAYERS begin
     perfmon.step("FBX import: Display Layers...")
 
-    layers.import_display_layers(fbx_table_nodes, fbx_connections, fbx_helper_nodes, view_layer)
+    layers.import_display_layers(fbx_table_nodes, fbx_connections, fbx_helper_nodes, view_layer,
+                                 fbx_template_get((layers.FBX_LAYER_TYPE, b'KFbxDisplayLayer')))
     # FBX-LAYERS end
 
     perfmon.step("FBX import: ShapeKeys...")

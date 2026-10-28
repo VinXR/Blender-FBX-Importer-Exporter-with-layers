@@ -331,6 +331,63 @@ def test_shared_mesh_kept_with_object_materials():
         check(got == expected, "%s face materials: %r" % (name, got))
 
 
+def test_layer_properties():
+    """Collection color tag / hidden / not selectable <-> layer Color / Show / Freeze, exact color kept on round trip."""
+    from io_scene_fbx_layers import layers
+
+    clear_scene()
+    theme = {"COLOR_%02d" % (i + 1): tuple(t.color) for i, t in enumerate(bpy.context.preferences.themes[0].collection_color)}
+    exact = (0.1, 0.2, 0.9)
+    exact_tag = layers._nearest_color_tag(exact)
+
+    cols = {name: new_collection(name) for name in ("Plain", "Red", "Exact", "Retagged", "Hidden", "Frozen")}
+    for name, col in cols.items():
+        new_object("ob_" + name, col)
+    cols["Red"].color_tag = 'COLOR_01'
+    cols["Exact"].color_tag = exact_tag
+    cols["Exact"][layers.COLLECTION_COLOR_PROP] = exact
+    # Exact color stored, but the tag was changed afterwards in Blender: the new tag wins.
+    retag = 'COLOR_04' if exact_tag != 'COLOR_04' else 'COLOR_03'
+    cols["Retagged"].color_tag = retag
+    cols["Retagged"][layers.COLLECTION_COLOR_PROP] = exact
+    bpy.context.view_layer.layer_collection.children["Hidden"].hide_viewport = True
+    cols["Frozen"].hide_select = True
+
+    path = os.path.join(OUT_DIR, "layer_props.fbx")
+    check(bpy.ops.export_scene.fbx_layers(filepath=path) == {'FINISHED'}, "export failed")
+
+    written = {}
+    for elem in fbx_sections(path)[b"Objects"].elems:
+        if elem.id == b"CollectionExclusive":
+            name = elem.props[1].split(b"\x00\x01")[0].decode()
+            props = {}
+            for p70 in elem.elems:
+                for p in p70.elems:
+                    props[p.props[0].decode()] = tuple(p.props[4:]) if p.props[0] == b"Color" else p.props[4]
+            written[name] = props
+
+    def close(a, b):
+        return all(abs(x - y) < 1e-5 for x, y in zip(a, b))
+
+    check(written["Plain"] == {}, "Plain should have no properties: %r" % written["Plain"])
+    check(close(written["Red"]["Color"], theme["COLOR_01"]), "Red color %r" % (written["Red"],))
+    check(close(written["Exact"]["Color"], exact), "Exact color %r" % (written["Exact"],))
+    check(close(written["Retagged"]["Color"], theme[retag]), "Retagged color %r" % (written["Retagged"],))
+    check(written["Hidden"].get("Show") == 0, "Hidden: %r" % written["Hidden"])
+    check(written["Frozen"].get("Freeze") == 1, "Frozen: %r" % written["Frozen"])
+
+    import_fork(path)
+    lcs = bpy.context.view_layer.layer_collection.children
+    got = {name: bpy.data.collections[name] for name in cols}
+    check(got["Plain"].color_tag == 'NONE' and layers.COLLECTION_COLOR_PROP not in got["Plain"], "Plain re-imported")
+    check(got["Red"].color_tag == 'COLOR_01', "Red tag %r" % got["Red"].color_tag)
+    check(got["Exact"].color_tag == exact_tag and close(got["Exact"][layers.COLLECTION_COLOR_PROP], exact),
+          "Exact re-imported: %r" % got["Exact"].color_tag)
+    check(got["Retagged"].color_tag == retag, "Retagged tag %r" % got["Retagged"].color_tag)
+    check(lcs["Hidden"].hide_viewport and not lcs["Plain"].hide_viewport, "Hidden re-imported")
+    check(got["Frozen"].hide_select and not got["Plain"].hide_select, "Frozen re-imported")
+
+
 def test_import_sample(path):
     order, members, _defs = read_layers(path)
     check(order, "sample has no layers: " + path)
@@ -361,6 +418,7 @@ def main():
     run("export: textures copied next to the FBX, relative paths", test_textures_copied_next_to_fbx)
     run("export: packed textures written next to the FBX", test_packed_textures_written_next_to_fbx)
     run("export: instances keep a shared Geometry", test_shared_mesh_kept_with_object_materials)
+    run("layer color / visibility / freeze round trip", test_layer_properties)
     # Sample FBX files with Display Layers are not distributed (third-party assets): drop your own in tests/samples/.
     samples = [EXAMPLE] if os.path.isfile(EXAMPLE) else []
     if os.path.isdir(SAMPLES):
